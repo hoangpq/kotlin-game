@@ -14,7 +14,7 @@ import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.Timer
 
-class panel : JPanel(), KeyListener {
+class GamePanel : JPanel(), KeyListener {
     private var xback1 = 0.0
     private var xback2 = 0.0
     private val cityx = 0.0
@@ -47,15 +47,15 @@ class panel : JPanel(), KeyListener {
     private var screenWidth: Int = 0
     private var screenHeight: Int = 0
     private var lockairplane: Int = 0
-    private lateinit var _airplane: airplane
-    private lateinit var _playsound: soundplay
-    private lateinit var _backgroundsound: soundplay
+    private lateinit var airplane: Airplane
+    private lateinit var playsound: SoundControl
+    private lateinit var backgroundsound: SoundControl
     private var screenFont: Font? = null
     private val jp: JProgressBar
-    private lateinit var th: loading
+    private lateinit var th: Loading
 
-    private var _enemy: CopyOnWriteArrayList<enemy> = CopyOnWriteArrayList()
-    private var ex: CopyOnWriteArrayList<explosion> = CopyOnWriteArrayList()
+    private var enemies: CopyOnWriteArrayList<Enemy> = CopyOnWriteArrayList()
+    private var explosions: CopyOnWriteArrayList<Explosion> = CopyOnWriteArrayList()
 
     init {
         addKeyListener(this)
@@ -64,7 +64,7 @@ class panel : JPanel(), KeyListener {
         try {
             screenWidth = toolkit.screenSize.width
             screenHeight = toolkit.screenSize.height
-            loading = ImageIcon(javaClass.getResource("/images/loading.png")).image
+            loading = ImageIcon(javaClass.getResource("/images/Loading.png")).image
             start = ImageIcon(javaClass.getResource("/images/start.png")).image
             gameover = ImageIcon(javaClass.getResource("/images/restart.png")).image
             background = ImageIcon(javaClass.getResource("/images/bg.png")).image
@@ -74,13 +74,13 @@ class panel : JPanel(), KeyListener {
             playerImage = ImageIcon(javaClass.getResource("/images/redJet.png")).image
             explosionImage = ImageIcon(javaClass.getResource("/images/explosion.png")).image
             val weaponImage = ImageIcon(javaClass.getResource("/images/weapon.png")).image
-            _playsound = soundplay("/sounds/explosion.wav", false)
-            _backgroundsound = soundplay("/sounds/audio.wav", true)
-            _airplane = airplane(50, 100, this.playerImage, weaponImage, this.explosionImage)
-            _enemy = CopyOnWriteArrayList()
-            ex = CopyOnWriteArrayList()
+            playsound = SoundControl("/sounds/explosion.wav", false)
+            backgroundsound = SoundControl("/sounds/audio.wav", true)
+            airplane = Airplane(50, 100, this.playerImage, weaponImage, this.explosionImage)
+            enemies = CopyOnWriteArrayList()
+            explosions = CopyOnWriteArrayList()
             for (i in 0..199) {
-                this._enemy.add(enemy((this.lockairplane + 600 + i * 200).toDouble(),
+                this.enemies.add(Enemy((this.lockairplane + 600 + i * 200).toDouble(),
                         (50 + this.rd.nextInt(201)).toDouble(), this.enemyImage))
             }
             val inpStream = javaClass.getResourceAsStream("/fonts/starcraft.ttf")
@@ -95,52 +95,52 @@ class panel : JPanel(), KeyListener {
             this.timer = Timer(10) { evt ->
                 if (this.isstart && !this.lock) {
                     this.th.stop()
-                    this._airplane.updateWeapon()
-                    if (this._airplane.shootCollision(this._enemy, this.ex, this._playsound)) {
+                    this.airplane.update()
+                    if (this.airplane.shootCollision(this.enemies, this.explosions, this.playsound)) {
                         this.scores += 1
                     }
-                    this._airplane.checkTimeLive()
+                    this.airplane.checkTimeLive()
                     if (this.isSpacePressed) {
                         if (this.isdead) {
                             this.timer.restart()
                             this.isdead = false
                             this.blood = 100
                             this.scores = 0
-                            this._backgroundsound.play()
+                            this.backgroundsound.play()
                             this.isstart = true
                         }
-                        this._airplane.fire()
+                        this.airplane.fire()
                     }
                     if (this.isUpPressed) {
-                        if (this._airplane.y > 10) {
-                            this._airplane.moveHor(-2)
+                        if (this.airplane.y > 10) {
+                            this.airplane.moveHor(-2)
                         }
-                    } else if (this.isDownPressed && this._airplane.y < 400) {
-                        this._airplane.moveHor(2)
+                    } else if (this.isDownPressed && this.airplane.y < 400) {
+                        this.airplane.moveHor(2)
                     }
 
                     if (this.isRightPressed) {
-                        if (this._airplane.x < 300) {
-                            this._airplane.moveVer(2)
+                        if (this.airplane.x < 300) {
+                            this.airplane.moveVer(2)
                         } else {
                             this.xback1 -= this.city1speed.toDouble()
                             this.xback2 -= this.city2speed.toDouble()
                         }
-                    } else if (this.isLeftPressed && this._airplane.x > 0) {
-                        this._airplane.moveVer(-2)
+                    } else if (this.isLeftPressed && this.airplane.x > 0) {
+                        this.airplane.moveVer(-2)
                     }
                     this.lockairplane = this.xback1.toInt()
 
-                    // TODO: update enemy
-                    if (this._enemy.size > 1) {
-                        this._enemy.iterator().forEach {
+                    // TODO: update models.Enemy
+                    if (this.enemies.size > 1) {
+                        this.enemies.iterator().forEach {
                             it.update()
                             if (it.checkOver(this.lockairplane)) {
-                                this._enemy.remove(it)
-                            } else if (this._airplane.checkCollision(it)) {
-                                this._enemy.remove(it)
-                                this.ex.add(explosion(it.getX(), it.getY(), this.explosionImage))
-                                this._playsound.play()
+                                this.enemies.remove(it)
+                            } else if (this.airplane.checkCollision(it)) {
+                                this.enemies.remove(it)
+                                this.explosions.add(Explosion(it.getX(), it.getY(), this.explosionImage))
+                                this.playsound.play()
                                 if (this.blood <= 10) {
                                     this.isdead = true
                                     this.timer.stop()
@@ -150,11 +150,11 @@ class panel : JPanel(), KeyListener {
                             }
                         }
                     }
-                    // TODO: remove all explosion
-                    this.ex.iterator().forEach {
+                    // TODO: remove all models.Explosion
+                    this.explosions.iterator().forEach {
                         it.update()
                         if (it.checkOver()) {
-                            this.ex.remove(it)
+                            this.explosions.remove(it)
                         }
                     }
                     this.repaint()
@@ -168,7 +168,7 @@ class panel : JPanel(), KeyListener {
 
         this.timer.start()
         this.jp = JProgressBar()
-        this.th = loading(this.jp)
+        this.th = Loading(this.jp)
         this.th.start()
     }
 
@@ -200,49 +200,57 @@ class panel : JPanel(), KeyListener {
             g2.fillRect(30, 409, 436 * this.th.value / 100, 19)
         } else if (this.isstart && !this.lock) {
             if (this.isdead) {
-
-                this._backgroundsound.stopClip()
+                this.backgroundsound.stopClip()
                 g2.drawImage(this.gameover, 0, 0, 500, 500, this)
                 val width = g2.fontMetrics.stringWidth(overString)
                 g2.drawString(overString, 250 - width / 2, 50)
-
             } else {
-                g.drawImage(this.background, 0, -50, this.width, this.height, this)
-                if (this.xback1 > -500.0) {
-                    this.xback1 -= this.cityx
-                } else {
-                    this.xback1 = 0.0
-                }
-                if (this.xback2 > -500.0) {
-                    this.xback2 -= this.cityx
-                } else {
-                    this.xback2 = 0.0
-                }
-                g.drawImage(this.city1, this.xback1.toInt(), 50, 500, 450, this)
-                g.drawImage(this.city1, this.xback1.toInt() + 500, 50, 500, 450, this)
-                g.drawImage(this.city2, this.xback2.toInt(), 300, 500, 200, this)
-                g.drawImage(this.city2, this.xback2.toInt() + 500, 300, 500, 200, this)
-                for (i in this._enemy.indices) {
-                    (this._enemy[i] as enemy).draw(g)
-                }
-                this._airplane.draw(g)
-                for (i in this.ex.indices) {
-                    (this.ex[i] as explosion).draw(g)
-                }
-                g.setColor(Color.MAGENTA)
-                g.drawString("Scores : " + this.scores.toString(), 10, 30)
-                g.setColor(Color.RED)
-                g.fillRect(200, 15, this.blood * 2, 20)
-                g.setColor(Color.WHITE)
-                g.fillRect(200 + this.blood * 2, 15, (100 - this.blood) * 2, 20)
+                // draw background
+                drawGameBackground(g)
+                // draw enemies
+                this.enemies.forEach { it.draw(g) }
+                // draw airplane
+                this.airplane.draw(g)
+                // draw explosions
+                this.explosions.forEach { it.draw(g) }
+                // draw blood bar
+                drawBloodBar(g)
             }
         }
+    }
+
+    fun drawGameBackground(g: Graphics) {
+        // draw background
+        g.drawImage(this.background, 0, -50, this.width, this.height, this)
+        if (this.xback1 > -500.0) {
+            this.xback1 -= this.cityx
+        } else {
+            this.xback1 = 0.0
+        }
+        if (this.xback2 > -500.0) {
+            this.xback2 -= this.cityx
+        } else {
+            this.xback2 = 0.0
+        }
+        g.drawImage(this.city1, this.xback1.toInt(), 50, 500, 450, this)
+        g.drawImage(this.city1, this.xback1.toInt() + 500, 50, 500, 450, this)
+        g.drawImage(this.city2, this.xback2.toInt(), 300, 500, 200, this)
+        g.drawImage(this.city2, this.xback2.toInt() + 500, 300, 500, 200, this)
+    }
+
+    fun drawBloodBar(g: Graphics) {
+        g.color = Color.MAGENTA
+        g.drawString("Scores : " + this.scores.toString(), 10, 30)
+        g.color = Color.RED
+        g.fillRect(200, 15, this.blood * 2, 20)
+        g.color = Color.WHITE
+        g.fillRect(200 + this.blood * 2, 15, (100 - this.blood) * 2, 20)
     }
 
     override fun keyPressed(arg0: KeyEvent) {
         if (!this.lock) {
             if (this.musiclock) {
-                this._backgroundsound.play()
+                this.backgroundsound.play()
                 this.musiclock = false
             }
             if (!this.isstart) {
@@ -292,4 +300,3 @@ class panel : JPanel(), KeyListener {
         private val serialVersionUID = 1L
     }
 }
-

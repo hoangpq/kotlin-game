@@ -1,14 +1,14 @@
 import java.awt.Graphics
 import java.awt.Image
 
-class enemy(private var x: Double, private val y: Double, private val img: Image) {
+class Enemy(private var x: Double, private val y: Double, private val img: Image): GameObject {
     private val speed: Double = 5.0
 
-    fun draw(g: Graphics) {
+    override fun draw(g: Graphics) {
         g.drawImage(this.img, this.x.toInt(), this.y.toInt(), null)
     }
 
-    fun update() {
+    override fun update() {
         this.x -= this.speed
     }
 

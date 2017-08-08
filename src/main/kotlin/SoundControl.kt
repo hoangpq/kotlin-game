@@ -1,7 +1,7 @@
 import javax.sound.sampled.Clip
 
-class soundplay(name: String, private val isloop: Boolean) {
-    private val url: java.net.URL = panel::class.java.getResource(name)
+class SoundControl(name: String, private val isloop: Boolean) {
+    private val url: java.net.URL = GamePanel::class.java.getResource(name)
     private var clip: Clip? = null
 
     fun play() {

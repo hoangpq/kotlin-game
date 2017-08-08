@@ -1,6 +1,6 @@
 import javax.swing.JProgressBar
 
-class loading(private val jp: JProgressBar) : Thread() {
+class Loading(private val jp: JProgressBar) : Thread() {
     var value: Int = 0
 
     init {
