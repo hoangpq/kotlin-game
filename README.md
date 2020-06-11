@@ -4,5 +4,6 @@
 ```bash
 $ git clone https://github.com/hoangpq/kotlin-game.git
 $ cd kotlin-game
-$ gradle build run
+$ ./gradlew build run (unix)
+$ gradlew build run (window)
 ```
